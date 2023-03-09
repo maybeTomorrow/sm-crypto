@@ -1,9 +1,10 @@
 /* eslint-disable no-bitwise, no-mixed-operators, no-use-before-define, max-len */
-const {BigInteger, SecureRandom} = require('jsbn')
-const {ECCurveFp} = require('./ec')
+const { BigInteger, SecureRandom } = require('jsbn')
+const { ECCurveFp } = require('./ec')
+const { sm3 } = require('./sm3')
 
 const rng = new SecureRandom()
-const {curve, G, n} = generateEcparam()
+const { curve, G, n } = generateEcparam()
 
 /**
  * 获取公共椭圆曲线
@@ -29,13 +30,19 @@ function generateEcparam() {
 
   const n = new BigInteger('FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFF7203DF6B21C6052B53BBF40939D54123', 16)
 
-  return {curve, G, n}
+  return { curve, G, n }
 }
 
 /**
  * 生成密钥对：publicKey = privateKey * G
  */
 function generateKeyPairHex(a, b, c) {
+  
+  if(a){
+    if(a.length<64){
+      a=sm3(a)
+    }
+  }
   const random = a ? new BigInteger(a, b, c) : new BigInteger(n.bitLength(), rng)
   const d = random.mod(n.subtract(BigInteger.ONE)).add(BigInteger.ONE) // 随机数
   const privateKey = leftPad(d.toString(16), 64)
@@ -45,8 +52,11 @@ function generateKeyPairHex(a, b, c) {
   const Py = leftPad(P.getY().toBigInteger().toString(16), 64)
   const publicKey = '04' + Px + Py
 
-  return {privateKey, publicKey}
+  return { privateKey, publicKey }
 }
+
+
+
 
 /**
  * 生成压缩公钥
@@ -58,10 +68,19 @@ function compressPublicKeyHex(s) {
   const xHex = s.substr(2, len)
   const y = new BigInteger(s.substr(len + 2, len), 16)
 
-  let prefix = '03'
-  if (y.mod(new BigInteger('2')).equals(BigInteger.ZERO)) prefix = '02'
+  let prefix = '01'
+  if (y.mod(new BigInteger('2')).equals(BigInteger.ZERO)) prefix = '00'
 
   return prefix + xHex
+}
+
+/**
+ * 解压公钥
+ */
+function uncompressPublicKeyHex(s) {
+  if (s.length !== 66) throw new Error('Invalid public key to uncompress')
+  const pt = curve.decodePointHex(s)
+  return '04' + pt.getX().toBigInteger().toString(16) + pt.getY().toBigInteger().toString(16);
 }
 
 /**
@@ -180,6 +199,7 @@ function comparePublicKeyHex(publicKey1, publicKey2) {
 }
 
 module.exports = {
+  uncompressPublicKeyHex,
   getGlobalCurve,
   generateEcparam,
   generateKeyPairHex,

@@ -293,9 +293,7 @@ class ECCurveFp {
     switch (parseInt(s.substr(0, 2), 16)) {
       // 第一个字节
       case 0:
-        return this.infinity
-      case 2:
-      case 3:
+      case 1:
         // 压缩
         const x = this.fromBigInteger(new BigInteger(s.substr(2), 16))
         // 对 p ≡ 3 (mod4)，即存在正整数 u，使得 p = 4u + 3
@@ -307,7 +305,7 @@ class ECCurveFp {
             this.q.divide(new BigInteger('4')).add(BigInteger.ONE), this.q
           ))
         // 算出结果 2 进制最后 1 位不等于第 1 个字节减 2 则取反
-        if (!y.toBigInteger().mod(TWO).equals(new BigInteger(s.substr(0, 2), 16).subtract(TWO))) {
+        if (!y.toBigInteger().mod(TWO).equals(new BigInteger(s.substr(0, 2), 16))) {
           y = y.negate()
         }
         return new ECPointFp(this, x, y)

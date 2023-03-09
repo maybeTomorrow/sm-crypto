@@ -234,6 +234,10 @@ function getPublicKeyFromPrivateKey(privateKey) {
   return '04' + x + y
 }
 
+function keyPairFromPk(privateKey){
+  return {privateKey,publicKey:getPublicKeyFromPrivateKey(privateKey)}
+}
+
 /**
  * 获取椭圆曲线点
  */
@@ -248,6 +252,8 @@ function getPoint() {
 }
 
 module.exports = {
+  uncompressPublicKeyHex:_.uncompressPublicKeyHex,
+  keyPairFromPk,
   generateKeyPairHex: _.generateKeyPairHex,
   compressPublicKeyHex: _.compressPublicKeyHex,
   comparePublicKeyHex: _.comparePublicKeyHex,
